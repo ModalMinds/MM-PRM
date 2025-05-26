@@ -131,7 +131,7 @@ The following is the information for you task:
 if __name__ == '__main__':
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    root_dir = '/path/to/omegaprm_outputs'
+    root_dir = '/path/to/outputs'
     roots = []
     for file in os.listdir(root_dir):
         logging.info(file)

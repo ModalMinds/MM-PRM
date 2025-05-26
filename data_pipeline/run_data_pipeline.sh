@@ -31,9 +31,9 @@ do
     j=$((START + i))
     GPU_ID=$i
     INPUT_FILE="$SPLIT_DIR/questions_part_${j}.json"
-    LOG_FILE="$LOG_DIR/omegaprm_part_${j}.log"
+    LOG_FILE="$LOG_DIR/part_${j}.log"
 
-    CUDA_VISIBLE_DEVICES="${GPU_ID}" python run_omegaprm.py \
+    CUDA_VISIBLE_DEVICES="${GPU_ID}" python run_data_pipeline.py \
         --input_file $INPUT_FILE \
         --log_file $LOG_FILE \
         --output_dir $OUTPUT_DIR \

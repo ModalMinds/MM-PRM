@@ -10,30 +10,32 @@
 
 <div align="center">
 <p align="center">
-  📖<a href="https://adaptive-paddleboat-4fd.notion.site/MM-PRM-1c0c99bc2f2b80978eb5ec22e131fba1">Blog</a> |
-  🤗<a href="https://huggingface.co/Cierra0506/MM-PRM-8B">MM-PRM-8B</a>
+  📖<a href="https://arxiv.org/abs/2505.13427">Paper</a> |
+  📊<a href="https://huggingface.co/datasets/Cierra0506/MM-K12">MM-K12</a> |
+  🤗<a href="https://huggingface.co/Cierra0506/MM-PRM">MM-PRM</a>
 </p>
 </div>
 
 <hr>
 <div align="center">
-<p style="text-align: center;">MM-PRM: An open implementation of OmegaPRM and its corresponding training pipeline<p>
+<p style="text-align: center;">MM-PRM: Enhancing Multimodal Mathematical Reasoning with Scalable Step-Level Supervision<p>
 </div>
 <hr>
 
 ## 🎯Overview
 
-Multimodal Large Language Models (MLLMs) have shown promising performance on various reasoning tasks, yet their ability to reliably solve complex multi-step problems remains limited. Process Reward Models (PRMs) address this challenge by explicitly evaluating the correctness of each intermediate reasoning step, guiding models toward more robust solutions. However, effectively training PRMs typically requires substantial amounts of step-level supervision data, which are expensive and challenging to obtain.
-
-We provide a complete implementation of **OmegaPRM**, an automated Monte Carlo Tree Search-based data pipeline, to generate scalable and high-quality multimodal step-level supervision data along with its corresponding training pipeline. Using this pipeline, we introduce a multimodal PRM based on the InternVL series.
-
-We open-source our complete pipeline to foster further research in this area. We release all our codes, models, etc. at [MM-PRM](https://github.com/ModalMinds/MM-PRM).
+While Multimodal Large Language Models (MLLMs) have achieved impressive progress in vision-language understanding, they still struggle with complex multi-step reasoning, often producing logically inconsistent or partially correct solutions. A key limitation lies in the lack of fine-grained supervision over intermediate reasoning steps. To address this, we propose **MM-PRM**, a process reward model trained within a fully automated, scalable framework. We first build **MM-Policy**, a strong multimodal model trained on diverse mathematical reasoning data. Then, we construct **MM-K12**, a curated dataset of 10,000 multimodal math problems with verifiable answers, which serves as seed data. Leveraging a Monte Carlo Tree Search (MCTS)-based pipeline, we generate over 700k step-level annotations without human labeling. The resulting PRM is used to score candidate reasoning paths in the Best-of-N inference setup and achieves significant improvements across both in-domain (MM-K12 test set) and out-of-domain (OlympiadBench, MathVista, etc.) benchmarks. Further analysis confirms the effectiveness of soft labels, smaller learning rates, and path diversity in optimizing PRM performance. MM-PRM demonstrates that process supervision is a powerful tool for enhancing the logical robustness of multimodal reasoning systems. We release all our codes and data at [MM-PRM](https://github.com/ModalMinds/MM-PRM).
 
 ## 🗞️ News
 
-- **\[2025/03/25\]** We released `MM-PRM`.
-  - 📖 Blog: [MM-PRM-Blog](https://adaptive-paddleboat-4fd.notion.site/MM-PRM-1c0c99bc2f2b80978eb5ec22e131fba1)
-  - 🤗 Model: [MM-PRM-8B](https://huggingface.co/Cierra0506/MM-PRM-8B)
+- **\[2025/05/19\]** We released `MM-PRM`.
+  - 📖 Paper: [MM-PRM-Paper](https://arxiv.org/abs/2505.13427)
+  - 📊 Data: [MM-K12](https://huggingface.co/datasets/Cierra0506/MM-K12)
+  - 🤗 Model: [MM-PRM](https://huggingface.co/Cierra0506/MM-PRM)
+
+## 📊 MM-K12 Dataset
+
+We released **MM-K12** dataset at [MM-K12](https://huggingface.co/datasets/Cierra0506/MM-K12).
 
 ## 🤖 Models
 
@@ -41,16 +43,15 @@ We open-source our complete pipeline to foster further research in this area. We
     <img alt="Case Study" src="./docs/case_study.png"/>
 </div>
 
-*Figure 1 | A case study showcasing the output of MM-PRM-8B. The PRM assigns confidence scores to each reasoning step and successfully distinguishes correct steps from incorrect ones.*
+*Figure 1 | Qualitative example of MM-PRM accurately identifying error steps in multimodal reasoning process.*
 
-|                   | Random (baseline) | min         | last        | average                                    | max         | sum_log prob                               | sum_logits                                 | mean_odd    |
-| ----------------- | ----------------- | ----------- | ----------- | ------------------------------------------ | ----------- | ------------------------------------------ | ------------------------------------------ | ----------- |
-| **K12**           | 36.2              | 43.8 (+7.6) | 41.8 (+5.6) | <span style="color:red">44.0 (+7.8)</span> | 42.2 (+6.0) | <span style="color:red">44.0 (+7.8)</span> | 43.8 (+7.6)                                | 42.4 (+6.2) |
-| **OlympiadBench** | 15.0              | 19.3 (+4.3) | 18.0 (+3.0) | 19.3 (+4.3)                                | 18.7 (+3.7) | 18.7 (+3.7)                                | <span style="color:red">20.7 (+5.7)</span> | 18.7 (+3.7) |
+<div align="center">
+    <img alt="Performance" src="./docs/performance.png"/>
+</div>
 
-*Table 1 | Evaluation results of MM-PRM-8B under Best-of-N (BoN, 16 rollout) metrics. K12 represents in-domain setting, while OlympiadBench serves as an out-of-domain benchmark. Our PRM consistently improves over the random baseline across multiple aggregation strategies.*
+*Figure 2 | Performance improvements across various benchmarks when applying the MM-PRM to different models.*
 
-- 🤗 [MM-PRM-8B](https://huggingface.co/Cierra0506/MM-PRM-8B)
+- 🤗 [MM-PRM](https://huggingface.co/Cierra0506/MM-PRM)
 
 ## 🏁 Getting Started
 
@@ -73,7 +74,7 @@ git checkout v2.3.6
 python setup.py install
 ```
 
-### 📂 OmegaPRM Data Pipeline
+### 📂 Data Pipeline
 
 1. **Seed dataset preparation**
 
@@ -91,7 +92,7 @@ python setup.py install
    ]
    ```
 
-   This dataset will be used as input to the OmegaPRM engine to generate annotated solution trees with step-wise correctness labels.
+   This dataset will be used as input to the data pipeline to generate annotated solution trees with step-wise correctness labels.
 
    To enable parallel data generation, you need to split the seed dataset into smaller chunks.
 
@@ -102,23 +103,23 @@ python setup.py install
 
 2. **API endpoint setup (Optional)**
 
-   The OmegaPRM data generation process requires an API endpoint to automatically verify whether the final answer in a rollout is correct. You can deploy a model (e.g., Qwen2.5) locally to act as the answer judge.
+   The data generation process requires an API endpoint to automatically verify whether the final answer in a rollout is correct. You can deploy a model (e.g., Qwen2.5) locally to act as the answer judge.
 
    We recommend using [vLLM](https://docs.vllm.ai/) to deploy a local model.
 
-3. **Run OmegaPRM**
+3. **Run data pipeline**
 
-   Once you have all set, you can run the OmegaPRM pipeline to generate step-level supervision data.
+   Once you have all set, you can run the data pipeline to generate step-level supervision data.
 
    Before running, ensure that all necessary parameters are correctly set in the script or passed through the environment.
 
    ```shell
-   sh run_omegaprm.sh
+   sh run_data_pipeline.sh
    ```
 
-4. **Sampling Training Data from OmegaPRM annotation trees**
+4. **Sampling Training Data from annotation trees**
 
-   After generating annotated reasoning trees with OmegaPRM, you need to sample step-by-step solution paths from these trees to construct the training data for the Process Reward Model (PRM). This can be done using the script:
+   After generating annotated reasoning trees, you need to sample step-by-step solution paths from these trees to construct the training data for the Process Reward Model (PRM). This can be done using the script:
 
    ```shell
    python traverse.py
@@ -183,10 +184,22 @@ We acknowledge the outstanding open-source contributions from [OpenR](https://gi
 ## 📜 Citation
 
 ```
-@misc{MM-PRM2025,
-  title={MM-PRM: An open implementation of OmegaPRM and its corresponding training pipeline},
-  author={ModalMinds Team},
-  year={2025},
-  howpublished={\url{https://github.com/ModalMinds/MM-PRM}},
+@article{du2025mmprm,
+      title={MM-PRM: Enhancing Multimodal Mathematical Reasoning with Scalable Step-Level Supervision},
+      author={Lingxiao Du and Fanqing Meng and Zongkai Liu and Zhixiang Zhou and Ping Luo and Qiaosheng Zhang and Wenqi Shao},
+      year={2025},
+      journal={arXiv preprint arXiv:2505.13427},
+}
+@article{meng2025mmeureka,
+      title={MM-Eureka: Exploring the Frontiers of Multimodal Reasoning with Rule-based Reinforcement Learning},
+      author={Fanqing Meng and Lingxiao Du and Zongkai Liu and Zhixiang Zhou and Quanfeng Lu and Daocheng Fu and Tiancheng Han and Botian Shi and Wenhai Wang and Junjun He and Kaipeng Zhang and Ping Luo and Yu Qiao and Qiaosheng Zhang and Wenqi Shao},
+      year={2025},
+      journal={arXiv preprint arXiv:2503.07365},
+}
+@article{liu2025cpgd,
+      title={CPGD: Toward Stable Rule-based Reinforcement Learning for Language Models},
+      author={Zongkai Liu and Fanqing Meng and Lingxiao Du and Zhixiang Zhou and Chao Yu and Wenqi Shao and Qiaosheng Zhang},
+      year={2025},
+      journal={arXiv preprint arXiv:2505.12504},
 }
 ```
