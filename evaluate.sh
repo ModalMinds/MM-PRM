@@ -31,12 +31,52 @@ while [[ $# -gt 0 ]]; do
 done
 echo "GPUS: ${GPUS}"
 
-if [ ${DATASET} == "k12-prm" ]; then
+if [[ "${DATASET}" == *"k12"* ]]; then
     torchrun \
       --nnodes=1 \
       --node_rank=0 \
       --master_addr=127.0.0.1 \
       --nproc_per_node=${GPUS} \
       --master_port=${MASTER_PORT} \
-      eval/prm/evaluate_k12_prm.py --checkpoint ${CHECKPOINT} --datasets zh_exam_k12_tiankong_test_prm "${ARGS[@]:2}"
+      eval/prm/evaluate_k12_prm.py --checkpoint ${CHECKPOINT} --datasets ${DATASET} "${ARGS[@]:2}"
+fi
+
+if [[ "${DATASET}" == *"mathvista"* ]]; then
+    torchrun \
+      --nnodes=1 \
+      --node_rank=0 \
+      --master_addr=127.0.0.1 \
+      --nproc_per_node=${GPUS} \
+      --master_port=${MASTER_PORT} \
+      eval/prm/evaluate_mathvista_prm.py --checkpoint ${CHECKPOINT} --datasets ${DATASET} "${ARGS[@]:2}"
+fi
+
+if [[ "${DATASET}" == *"mathverse"* ]]; then
+    torchrun \
+      --nnodes=1 \
+      --node_rank=0 \
+      --master_addr=127.0.0.1 \
+      --nproc_per_node=${GPUS} \
+      --master_port=${MASTER_PORT} \
+      eval/prm/evaluate_mathverse_prm.py --checkpoint ${CHECKPOINT} --datasets ${DATASET} "${ARGS[@]:2}"
+fi
+
+if [[ "${DATASET}" == *"mathvision"* ]]; then
+    torchrun \
+      --nnodes=1 \
+      --node_rank=0 \
+      --master_addr=127.0.0.1 \
+      --nproc_per_node=${GPUS} \
+      --master_port=${MASTER_PORT} \
+      eval/prm/evaluate_mathvision_prm.py --checkpoint ${CHECKPOINT} --datasets ${DATASET} "${ARGS[@]:2}"
+fi
+
+if [[ "${DATASET}" == *"olympiadbench"* ]]; then
+    torchrun \
+      --nnodes=1 \
+      --node_rank=0 \
+      --master_addr=127.0.0.1 \
+      --nproc_per_node=${GPUS} \
+      --master_port=${MASTER_PORT} \
+      eval/prm/evaluate_olympiadbench_prm.py --checkpoint ${CHECKPOINT} --datasets ${DATASET} "${ARGS[@]:2}"
 fi

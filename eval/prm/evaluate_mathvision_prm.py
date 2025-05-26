@@ -13,7 +13,10 @@ from internvl.model import load_model_and_tokenizer
 from internvl.train.dataset import build_transform, dynamic_preprocess
 
 ds_collections = {
-    'k12_prm': {'root': '/path/to/image/root', 'annotation': '/path/to/rollout/file'}
+    'mathvision_prm': {
+        'root': '/path/to/image/root',
+        'annotation': '/path/to/rollout/file',
+    }
 }
 
 
@@ -25,7 +28,7 @@ def collate_fn(batches):
     return pixel_values, prompts, steps_lens, data_items
 
 
-class K12PRMDataset(torch.utils.data.Dataset):
+class MathVisionPRMDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
@@ -49,10 +52,9 @@ class K12PRMDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         data_item = self.data[idx]
-        image = Image.open(os.path.join(self.root, data_item['image_path'])).convert(
-            'RGB'
-        )
+        image = os.path.join(self.root, os.path.basename(data_item['image']))
 
+        image = Image.open(image).convert('RGB')
         if self.dynamic_image_size:
             images = dynamic_preprocess(
                 image,
@@ -65,7 +67,12 @@ class K12PRMDataset(torch.utils.data.Dataset):
         pixel_values = [self.transform(image) for image in images]
         pixel_values = torch.stack(pixel_values)
 
-        question = data_item['question']
+        options = ''
+        if len(data_item['options']) > 0:
+            assert len(data_item['options']) == 5, data_item
+            if ''.join(data_item['options']) != 'ABCDE':
+                options = f"(A) {data_item['options'][0]}\n(B) {data_item['options'][1]}\n(C) {data_item['options'][2]}\n(D) {data_item['options'][3]}\n(E) {data_item['options'][4]}\n"
+        question = f"{data_item['question']}\n{options}"
 
         prompts = []
         steps_lens = []
@@ -115,7 +122,7 @@ def evaluate_chat_model():
     random.seed(args.seed)
 
     for ds_name in args.datasets:
-        dataset = K12PRMDataset(
+        dataset = MathVisionPRMDataset(
             root=ds_collections[ds_name]['root'],
             annotation=ds_collections[ds_name]['annotation'],
             input_size=image_size,
@@ -195,7 +202,7 @@ def evaluate_chat_model():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', type=str, default='')
-    parser.add_argument('--datasets', type=str, default='k12_prm')
+    parser.add_argument('--datasets', type=str, default='')
     parser.add_argument('--mini-batch-size', type=int, default=4)
     parser.add_argument('--num-workers', type=int, default=2)
     parser.add_argument('--out-dir', type=str, default='results')

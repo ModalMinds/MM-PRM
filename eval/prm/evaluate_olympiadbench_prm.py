@@ -13,7 +13,10 @@ from internvl.model import load_model_and_tokenizer
 from internvl.train.dataset import build_transform, dynamic_preprocess
 
 ds_collections = {
-    'k12_prm': {'root': '/path/to/image/root', 'annotation': '/path/to/rollout/file'}
+    'olympiadbench_prm': {
+        'root': '/path/to/image/root',
+        'annotation': '/path/to/rollout/file',
+    }
 }
 
 
@@ -21,11 +24,12 @@ def collate_fn(batches):
     pixel_values = batches[0]['pixel_values']
     prompts = batches[0]['prompts']
     steps_lens = batches[0]['steps_lens']
+    num_image_patch = batches[0]['num_image_patch']
     data_items = batches[0]['data_item']
-    return pixel_values, prompts, steps_lens, data_items
+    return pixel_values, prompts, steps_lens, num_image_patch, data_items
 
 
-class K12PRMDataset(torch.utils.data.Dataset):
+class OlympiadBenchPRMDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
@@ -49,19 +53,27 @@ class K12PRMDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         data_item = self.data[idx]
-        image = Image.open(os.path.join(self.root, data_item['image_path'])).convert(
-            'RGB'
-        )
 
-        if self.dynamic_image_size:
-            images = dynamic_preprocess(
-                image,
-                image_size=self.input_size,
-                use_thumbnail=self.use_thumbnail,
-                max_num=self.max_num,
-            )
-        else:
-            images = [image]
+        images, num_tiles = [], []
+        for i in range(1, 6):
+            key = f'image_{i}'
+            if data_item[key] is None:
+                continue
+
+            image = Image.open(os.path.join(self.root, data_item[key])).convert('RGB')
+
+            if self.dynamic_image_size:
+                image = dynamic_preprocess(
+                    image,
+                    image_size=self.input_size,
+                    use_thumbnail=self.use_thumbnail,
+                    max_num=self.max_num,
+                )
+                images += image
+                num_tiles.append(len(image))
+            else:
+                images.append(image)
+                num_tiles.append(1)
         pixel_values = [self.transform(image) for image in images]
         pixel_values = torch.stack(pixel_values)
 
@@ -77,6 +89,7 @@ class K12PRMDataset(torch.utils.data.Dataset):
 
         return {
             'pixel_values': pixel_values,
+            'num_image_patch': num_tiles,
             'prompts': prompts,
             'steps_lens': steps_lens,
             'data_item': data_item,
@@ -115,7 +128,7 @@ def evaluate_chat_model():
     random.seed(args.seed)
 
     for ds_name in args.datasets:
-        dataset = K12PRMDataset(
+        dataset = OlympiadBenchPRMDataset(
             root=ds_collections[ds_name]['root'],
             annotation=ds_collections[ds_name]['annotation'],
             input_size=image_size,
@@ -134,19 +147,23 @@ def evaluate_chat_model():
         )
 
         outputs = []
-        for idx, (pixel_values, prompts, steps_lens, data_item) in tqdm(
-            enumerate(dataloader)
-        ):
+        for idx, (
+            pixel_values,
+            prompts,
+            steps_lens,
+            num_image_patch,
+            data_item,
+        ) in tqdm(enumerate(dataloader)):
             pixel_values = pixel_values.to(torch.bfloat16).cuda()
 
             prm_scores_flattened = []
             for i in range(0, len(prompts), args.mini_batch_size):
                 curr_bs = min(args.mini_batch_size, len(prompts) - i)
-                output = model.batch_prm(
+                output = model.prm(
                     tokenizer=tokenizer,
-                    pixel_values=torch.cat([pixel_values] * curr_bs, dim=0),
-                    questions=prompts[i : i + curr_bs],
-                    num_patches_list=[pixel_values.shape[0]] * curr_bs,
+                    pixel_values=pixel_values,
+                    question=prompts[i : i + curr_bs][0],
+                    num_patches_list=num_image_patch,
                     verbose=True,
                 )
                 prm_scores_flattened.extend(output.tolist())
@@ -195,8 +212,8 @@ def evaluate_chat_model():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', type=str, default='')
-    parser.add_argument('--datasets', type=str, default='k12_prm')
-    parser.add_argument('--mini-batch-size', type=int, default=4)
+    parser.add_argument('--datasets', type=str, default='')
+    parser.add_argument('--mini-batch-size', type=int, default=1)
     parser.add_argument('--num-workers', type=int, default=2)
     parser.add_argument('--out-dir', type=str, default='results')
     parser.add_argument('--seed', type=int, default=0)
